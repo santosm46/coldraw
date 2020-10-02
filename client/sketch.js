@@ -72,11 +72,12 @@ function newDrawing(data) {
 
 function updateHistory(history) {
 	localHistory = history;
+	drawHistory();
 }
 
 function drawHistory() {
 	for(let ball of localHistory) {
-		canvas.drawCircle(ball.color, ball.x, ball.y, ball.lineSize);
+		drawCircle(ball.color, ball.x, ball.y, ball.lineSize);
 	}
 }
 
