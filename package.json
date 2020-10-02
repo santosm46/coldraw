@@ -1,0 +1,21 @@
+{
+  "name": "coldraw",
+  "version": "1.0.0",
+  "description": "Colaborative drawings",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "sockets",
+    "p5.js",
+    "draw"
+  ],
+  "author": "Marcelo Araújo dos Santos",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  }
+}

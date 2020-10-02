@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>coldraw</title>
+
+	<script src="libraries/p5.js"></script>
+	<script src="libraries/p5.dom.js"></script>
+	<script src="libraries/p5.sound.js"></script>
+	<script src="sketch.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+
+
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+		}
+
+		canvas {
+			margin: auto;
+		}
+
+		.botao_cor {
+			padding: 20px;
+
+		}
+
+		.botao_cor#verde {
+			background-color: green;
+		}
+
+		.botao_cor#vermelho {
+			background-color: red;
+		}
+
+		.botao_cor#azul {
+			background-color: blue;
+		}
+
+		.botao_cor#rosa {
+			background-color: pink;
+		}
+
+		.botao_cor#amarelo {
+			background-color: yellow;
+		}
+
+		.botao_cor#roxo {
+			background-color: purple;
+		}
+
+		.botao_cor#preto {
+			background-color: black;
+		}
+
+		.botao_cor#branco {
+			background-color: white;
+		}
+
+		.botao_cor#cinza {
+			background-color: gray;
+		}
+
+		.slider {
+			-webkit-appearance: none;
+			/* Override default CSS styles */
+			appearance: none;
+			/* width: 100%; */
+			/* Full-width */
+			height: 25px;
+			/* Specified height */
+			background: #d3d3d3;
+			/* Grey background */
+			outline: none;
+			/* Remove outline */
+			opacity: 0.7;
+			/* Set transparency (for mouse-over effects on hover) */
+			-webkit-transition: .2s;
+			/* 0.2 seconds transition on hover */
+			transition: opacity .2s;
+		}
+
+		.slider:hover {
+			opacity: 1;
+			/* Fully shown on mouse-over */
+		}
+
+		
+	</style>
+</head>
+
+<body>
+	<div id="botoes">
+		<button class="botao_cor" id="verde" onclick="mudaCor('green')"></button>
+		<button class="botao_cor" id="vermelho" onclick="mudaCor('red')"></button>
+		<button class="botao_cor" id="azul" onclick="mudaCor('blue')"></button>
+		<button class="botao_cor" id="rosa" onclick="mudaCor('pink')"></button>
+		<button class="botao_cor" id="amarelo" onclick="mudaCor('yellow')"></button>
+		<button class="botao_cor" id="roxo" onclick="mudaCor('purple')"></button>
+		<button class="botao_cor" id="preto" onclick="mudaCor('black')"></button>
+		<button class="botao_cor" id="branco" onclick="mudaCor('white')"></button>
+		<button class="botao_cor" id="cinza" onclick="mudaCor('grey')"></button>
+		<input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+	</div>
+</body>
+
+</html>
