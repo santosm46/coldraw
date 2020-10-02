@@ -5,7 +5,7 @@ var server = app.listen(process.env.PORT || 3333);
 var socket = require('socket.io');
 
 const MAX_HIST_SIZE = 1500000;
-const history = [];
+var history = [];
 
 app.use(express.static('client'));
 
@@ -30,7 +30,24 @@ io.sockets.on('connection', (socket) => {
         history.push(data);
         limitHistory();
         socket.broadcast.emit('mouse',data); // outros clients
-        // io.sockets.emit('mouse',data); // todos os clients
+    });
+
+    socket.on('undo', (data) => {
+        let partToRemove = 0;
+        for (let i = history.length-1; i >=0; i--) {
+            if(history[i].checkpoint) {
+                partToRemove = i;
+                break;
+            }
+        }
+        // console.log(`deleting history[${partToRemove}:${history.length}]`);
+        history = history.slice(0, partToRemove);
+        io.sockets.emit('history',history); // todos os clients
+    });
+
+    socket.on('mark checkpoint', (data) => {
+        if(history.length === 0) return;
+        history[history.length-1].checkpoint = true;
     });
 
     socket.on('disconnect', () => {

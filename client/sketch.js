@@ -28,7 +28,7 @@ function setup() {
 
 	canvas = createGraphics(width, height);
 	canvas.ellipseMode(CENTER);
-	canvas.background(255);
+	clearCanvas();
 	canvas.noStroke();
 
 	socket = io.connect();
@@ -51,8 +51,7 @@ function drawCircle(color, posX, posY, size) {
 	canvas.ellipse(posX, posY, size, size);
 }
 
-function mouseDragged() {
-	if(!mouseOnBoard()) return;
+function drawOnBoard() {
 	drawCircle(cor, mouseX, mouseY, lineSize);
 
 	const data = {
@@ -60,11 +59,28 @@ function mouseDragged() {
 		y: mouseY,
 		lineSize: lineSize,
 		rgb: color,
-		color: cor
+		color: cor,
+		checkpoint: false
 	};
 
 	socket.emit('mouse', data);
 }
+
+function mouseDragged() {
+	if(!mouseOnBoard()) return;
+	drawOnBoard();
+}
+
+function mousePressed() {
+	if(!mouseOnBoard()) return;
+	print('mouse pressionado');
+	socket.emit('mark checkpoint', {});
+	drawOnBoard();
+}
+
+// function mouseReleased() {
+// 	print('mouse foi solto');
+// }
 
 function newDrawing(data) {
 	drawCircle(data.color, data.x, data.y, data.lineSize);
@@ -75,7 +91,12 @@ function updateHistory(history) {
 	drawHistory();
 }
 
+function clearCanvas() {
+	canvas.background(255);
+}
+
 function drawHistory() {
+	clearCanvas();
 	for(let ball of localHistory) {
 		drawCircle(ball.color, ball.x, ball.y, ball.lineSize);
 	}
@@ -97,3 +118,18 @@ function limitHistory() {
         localHistory = localHistory.slice(parseInt(length * percent), length);
     }
 }
+
+function undo() {
+	socket.emit('undo', {});
+}
+
+function keyPressed() {
+	// console.log(keyCode);
+	if(keyIsDown(90) && keyIsDown(CONTROL)) {
+		print("Ctrl+z");
+		undo();
+	}
+	// if (keyCode === 90 && evtobj.ctrlKey) alert("Ctrl+z");
+}
+
+
