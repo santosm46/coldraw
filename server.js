@@ -6,6 +6,7 @@ var socket = require('socket.io');
 
 const MAX_HIST_SIZE = 1500000;
 var history = [];
+var mouses = {};
 
 app.use(express.static('client'));
 
@@ -20,9 +21,19 @@ function limitHistory() {
     }
 }
 
+function connectClient(client) {
+    mouses[client.id] = {id: client.id};
+}
+
+function disconnectClient(client) {
+    delete mouses[client.id];
+}
+
 io.sockets.on('connection', (socket) => {
     // console.log(socket);
+    connectClient({id:socket.id});
     console.log(`client ${socket.id} connected to the server`);
+
 
     socket.emit('history', history);
 
@@ -50,8 +61,14 @@ io.sockets.on('connection', (socket) => {
         history[history.length-1].checkpoint = true;
     });
 
+    socket.on('mouse move', (data) => {
+        mouses[socket.id] = data;
+        socket.broadcast.emit('mouse move',mouses);
+    });
+
     socket.on('disconnect', () => {
-        console.log(`client ${socket.id} disconnect`)
+        disconnectClient({id:socket.id});
+        console.log(`client ${socket.id} disconnect`);
     });
 
 });

@@ -1,14 +1,15 @@
 
-var cor = '#0000ff';
-var slider;
-var previous;
+let cor = '#0000ff';
+let slider;
+let previous;
 // const MAX_HIST_SIZE = 1500000;
 
-var socket;
-var lineSize;
-var canvas;
-var localHistory = [];
+let socket;
+let lineSize;
+let canvas;
+let localHistory = [];
 let colorPicker;
+let mouses = {};
 
 // const color = {
 // 	r: Math.random()*255,
@@ -45,6 +46,7 @@ function setup() {
 	socket = io.connect();
 	socket.on('mouse', newDrawing);
 	socket.on('history', updateHistory);
+	socket.on('mouse move', updateMousesRing);
 
 }
 
@@ -53,6 +55,9 @@ function draw() {
 	lineSize = parseInt(slider.value);
 
 	image(canvas, 0, 0);
+
+	showMousesRing();
+
 	fill(cor);
 	ellipse(mouseX, mouseY, lineSize, lineSize);
 }
@@ -96,6 +101,7 @@ function drawOnBoard(checkpoint) {
 }
 
 function mouseDragged() {
+	socket.emit('mouse move', {id: socket.id, mouseX, mouseY, lineSize});
 	if(!mouseOnBoard()) return;
 	drawOnBoard(false);
 }
@@ -109,6 +115,24 @@ function mousePressed() {
 // function mouseReleased() {
 // 	print('mouse foi solto');
 // }
+
+function updateMousesRing(newMouses) {
+	mouses = newMouses;
+}
+
+function showMousesRing() {
+	noFill();
+	for (var mouseKey in mouses) {
+		const mouse = mouses[mouseKey];
+		if(mouse.id === socket.id) continue;
+		ellipse(mouse.mouseX, mouse.mouseY, mouse.lineSize, mouse.lineSize);
+	}
+}
+
+function mouseMoved() {
+	socket.emit('mouse move', {id: socket.id, mouseX, mouseY, lineSize});
+	return false;
+}
 
 function newDrawing(data) {
 	drawCircle(data);
@@ -154,7 +178,7 @@ function undo() {
 function keyPressed() {
 	// console.log(keyCode);
 	if(keyIsDown(90) && keyIsDown(CONTROL)) {
-		print("Ctrl+z");
+		// print("Ctrl+z");
 		undo();
 	}
 	// if (keyCode === 90 && evtobj.ctrlKey) alert("Ctrl+z");
