@@ -1,21 +1,23 @@
 
-var cor = 'blue';
+var cor = '#0000ff';
 var slider;
+var previous;
 // const MAX_HIST_SIZE = 1500000;
 
 var socket;
 var lineSize;
 var canvas;
 var localHistory = [];
+let colorPicker;
 
-const color = {
-	r: Math.random()*255,
-	g: Math.random()*255,
-	b: Math.random()*200
-};
+// const color = {
+// 	r: Math.random()*255,
+// 	g: Math.random()*255,
+// 	b: Math.random()*200
+// };
 
-function mudaCor(novaCor) {
-	cor = novaCor;
+function mudaCor(event) {
+	cor = event.target.value;
 }
 
 function setup() {
@@ -30,6 +32,15 @@ function setup() {
 	canvas.ellipseMode(CENTER);
 	clearCanvas();
 	canvas.noStroke();
+
+	colorPicker = document.querySelector('input');
+	colorPicker.addEventListener('input', mudaCor);
+	// colorPicker = createGraphics(width, height);
+	// drawPallete();
+
+
+	// colorPicker = createColorPicker("blue");
+    // colorPicker.position(width + 10, 0);
 
 	socket = io.connect();
 	socket.on('mouse', newDrawing);
@@ -46,13 +57,31 @@ function draw() {
 	ellipse(mouseX, mouseY, lineSize, lineSize);
 }
 
-function drawCircle(color, posX, posY, size) {
-	canvas.fill(color);
-	canvas.ellipse(posX, posY, size, size);
+function drawCircle(circle) {
+	if(!circle) {
+		console.error(`param circle is null`);
+		return;
+	}
+	
+	if(circle.checkpoint) {
+		previous = circle;
+		// canvas.fill(circle.color);
+		// canvas.ellipse(circle.x, circle.y, circle.lineSize/2, circle.lineSize/2);
+	}
+	if(previous) {
+		canvas.stroke(circle.color);
+		canvas.strokeWeight(circle.lineSize);
+		canvas.line(previous.x, previous.y, circle.x, circle.y);
+	}
+	else {
+		console.error(`var previous is null`);
+	}
+	previous = circle;
+	
 }
 
-function drawOnBoard() {
-	drawCircle(cor, mouseX, mouseY, lineSize);
+function drawOnBoard(checkpoint) {
+	drawCircle({color:cor, x:mouseX, y:mouseY, lineSize, checkpoint});
 
 	const data = {
 		x: mouseX,
@@ -60,7 +89,7 @@ function drawOnBoard() {
 		lineSize: lineSize,
 		rgb: color,
 		color: cor,
-		checkpoint: false
+		checkpoint: checkpoint
 	};
 
 	socket.emit('mouse', data);
@@ -68,14 +97,13 @@ function drawOnBoard() {
 
 function mouseDragged() {
 	if(!mouseOnBoard()) return;
-	drawOnBoard();
+	drawOnBoard(false);
 }
 
 function mousePressed() {
 	if(!mouseOnBoard()) return;
-	print('mouse pressionado');
-	socket.emit('mark checkpoint', {});
-	drawOnBoard();
+	// socket.emit('mark checkpoint', {});
+	drawOnBoard(true);
 }
 
 // function mouseReleased() {
@@ -83,7 +111,7 @@ function mousePressed() {
 // }
 
 function newDrawing(data) {
-	drawCircle(data.color, data.x, data.y, data.lineSize);
+	drawCircle(data);
 }
 
 function updateHistory(history) {
@@ -98,7 +126,7 @@ function clearCanvas() {
 function drawHistory() {
 	clearCanvas();
 	for(let ball of localHistory) {
-		drawCircle(ball.color, ball.x, ball.y, ball.lineSize);
+		drawCircle(ball);
 	}
 }
 
@@ -132,4 +160,15 @@ function keyPressed() {
 	// if (keyCode === 90 && evtobj.ctrlKey) alert("Ctrl+z");
 }
 
+// function drawPallete() {
+
+// 	for(let i=0; i<255; i++) {
+// 		for(let j=0; j<255; j++) {
+// 			colorPicker.stroke(i, j, 150);
+// 			colorPicker.point(i, j);
+// 		}
+// 	}
+
+	
+// }
 
