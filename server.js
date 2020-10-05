@@ -1,73 +1,107 @@
-var express = require('express');
-var app = express();
-// var server = app.listen(3333);
-var server = app.listen(process.env.PORT || 3333);
-var socket = require('socket.io');
-
 const MAX_HIST_SIZE = 1500000;
-var history = [];
-var mouses = {};
-
-app.use(express.static('client'));
+let express = require('express');
+let app = express();
+let server = app.listen(process.env.PORT || 3333);
+let socket = require('socket.io');
 
 var io = socket(server);
 
-function limitHistory() {
-    const percent = 0.2; // percent of history to remove
-    const length = history.length;
+app.use(express.static('client'));
 
-    if(length >= MAX_HIST_SIZE) {
-        history = history.slice(parseInt(length * percent), length);
-    }
-}
+const state = {
+    history: [],
+    clients: {},
+    mouseRings: {}
+};
+
 
 function connectClient(client) {
-    mouses[client.id] = {id: client.id};
+    const newClient = {};
+
+    newClient.id = client.id;
+    newClient.buffer = [];
+
+    state.mouseRings = { id: client.id, mouseX: 0, mouseY: 0, lineSize: 20 };
+
+    state.clients[client.id] = newClient;
 }
 
 function disconnectClient(client) {
-    delete mouses[client.id];
+    cleanClientBuffer(client.id);
+    delete state.clients[client.id];
+    delete state.mouseRings[client.id];
+    io.sockets.emit('updated state', {clients: state.clients, mouseRings: state.mouseRings});
+}
+
+function cleanClientBuffer(clientId) {
+    const client = state.clients[clientId];
+    state.history = state.history.concat(client.buffer);
+    client.buffer = [];
+    limitHistory();
+}
+
+
+function limitHistory() {
+    const percent = 0.2; // percent of history to remove
+    const length = state.history.length;
+
+    if (length >= MAX_HIST_SIZE) {
+        state.history = state.history.slice(parseInt(length * percent), length);
+    }
+}
+
+function removeIDfromData(data) {
+    // to savo to history to save memory
+    // data.id = null;
+    return data;
 }
 
 io.sockets.on('connection', (socket) => {
     // console.log(socket);
-    connectClient({id:socket.id});
+    connectClient({ id: socket.id });
     console.log(`client ${socket.id} connected to the server`);
 
 
-    socket.emit('history', history);
+    // socket.emit('history', history);
+    socket.emit('updated state', state);
 
-    socket.on('mouse', (data) => {
-        history.push(data);
-        limitHistory();
-        socket.broadcast.emit('mouse',data); // outros clients
+    socket.on('mouse draw', (data) => {
+        socket.broadcast.emit('mouse draw', data); // outros clients
+        // console.log('veja o data.id: ', data.id);
+        state.clients[data.id].buffer.push(removeIDfromData(data));
+    });
+
+    socket.on('mouse released', (data) => {
+        cleanClientBuffer(socket.id);
     });
 
     socket.on('undo', (data) => {
+        console.log('refazendo');
         let partToRemove = 0;
-        for (let i = history.length-1; i >=0; i--) {
-            if(history[i].checkpoint) {
+        if (state.history.length == 0) return;
+
+        for (let i = state.history.length - 1; i >= 0; i--) {
+            if (state.history[i].checkpoint) {
                 partToRemove = i;
                 break;
             }
         }
         // console.log(`deleting history[${partToRemove}:${history.length}]`);
-        history = history.slice(0, partToRemove);
-        io.sockets.emit('history',history); // todos os clients
-    });
-
-    socket.on('mark checkpoint', (data) => {
-        if(history.length === 0) return;
-        history[history.length-1].checkpoint = true;
+        // console.log(' ****************  before   ****************');
+        // console.log(state.history);
+        state.history = state.history.slice(0, partToRemove);
+        // console.log(' ****************  after   ****************');
+        // console.log(state.history);
+        io.sockets.emit('updated state', {history: state.history}); // todos os clients
     });
 
     socket.on('mouse move', (data) => {
-        mouses[socket.id] = data;
-        socket.broadcast.emit('mouse move',mouses);
+        // mouses[socket.id] = data;
+        socket.broadcast.emit('mouse move', data);
     });
 
     socket.on('disconnect', () => {
-        disconnectClient({id:socket.id});
+        disconnectClient({ id: socket.id });
         console.log(`client ${socket.id} disconnect`);
     });
 

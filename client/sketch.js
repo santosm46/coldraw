@@ -1,21 +1,20 @@
 
 let cor = '#0000ff';
 let slider;
-let previous;
 // const MAX_HIST_SIZE = 1500000;
 
 let socket;
 let lineSize;
 let canvas;
-let localHistory = [];
 let colorPicker;
-let mouses = {};
+// let mouses = {};
+let state = {};
+// let otherClients;
+let myId;
+let previous = null;
 
-// const color = {
-// 	r: Math.random()*255,
-// 	g: Math.random()*255,
-// 	b: Math.random()*200
-// };
+const OUTER_BOARD = 50;
+
 
 function mudaCor(event) {
 	cor = event.target.value;
@@ -36,138 +35,51 @@ function setup() {
 
 	colorPicker = document.querySelector('input');
 	colorPicker.addEventListener('input', mudaCor);
-	// colorPicker = createGraphics(width, height);
-	// drawPallete();
-
-
-	// colorPicker = createColorPicker("blue");
-    // colorPicker.position(width + 10, 0);
 
 	socket = io.connect();
-	socket.on('mouse', newDrawing);
-	socket.on('history', updateHistory);
-	socket.on('mouse move', updateMousesRing);
+
+
+	socket.on('mouse draw', drawLine);
+	socket.on('mouse move', updateMouseRing);
+	socket.on('updated state', updateState);
+
+	myId = socket.id;
+
 
 }
 
+function updateState(newState) {
+	if(newState.clients) {
+		state.clients = newState.clients;
+	}
+
+	if(newState.mouseRings) {
+		state.mouseRings = newState.mouseRings;
+	}
+
+	if(newState.history) {
+		state.history = newState.history;
+		drawHistory();
+	}
+}
 
 function draw() {
 	lineSize = parseInt(slider.value);
 
 	image(canvas, 0, 0);
 
-	showMousesRing();
+	showMouseRings();
 
 	fill(cor);
 	ellipse(mouseX, mouseY, lineSize, lineSize);
 }
 
-function drawCircle(circle) {
-	if(!circle) {
-		console.error(`param circle is null`);
-		return;
-	}
-	
-	if(circle.checkpoint) {
-		previous = circle;
-		// canvas.fill(circle.color);
-		// canvas.ellipse(circle.x, circle.y, circle.lineSize/2, circle.lineSize/2);
-	}
-	if(previous) {
-		canvas.stroke(circle.color);
-		canvas.strokeWeight(circle.lineSize);
-		canvas.line(previous.x, previous.y, circle.x, circle.y);
-	}
-	else {
-		console.error(`var previous is null`);
-	}
-	previous = circle;
-	
-}
-
-function drawOnBoard(checkpoint) {
-	drawCircle({color:cor, x:mouseX, y:mouseY, lineSize, checkpoint});
-
-	const data = {
-		x: mouseX,
-		y: mouseY,
-		lineSize: lineSize,
-		rgb: color,
-		color: cor,
-		checkpoint: checkpoint
-	};
-
-	socket.emit('mouse', data);
-}
-
-function mouseDragged() {
-	socket.emit('mouse move', {id: socket.id, mouseX, mouseY, lineSize});
-	if(!mouseOnBoard()) return;
-	drawOnBoard(false);
-}
-
-function mousePressed() {
-	if(!mouseOnBoard()) return;
-	// socket.emit('mark checkpoint', {});
-	drawOnBoard(true);
-}
-
-// function mouseReleased() {
-// 	print('mouse foi solto');
-// }
-
-function updateMousesRing(newMouses) {
-	mouses = newMouses;
-}
-
-function showMousesRing() {
-	noFill();
-	for (var mouseKey in mouses) {
-		const mouse = mouses[mouseKey];
-		if(mouse.id === socket.id) continue;
-		ellipse(mouse.mouseX, mouse.mouseY, mouse.lineSize, mouse.lineSize);
-	}
-}
-
-function mouseMoved() {
-	socket.emit('mouse move', {id: socket.id, mouseX, mouseY, lineSize});
-	return false;
-}
-
-function newDrawing(data) {
-	drawCircle(data);
-}
-
-function updateHistory(history) {
-	localHistory = history;
-	drawHistory();
-}
-
-function clearCanvas() {
-	canvas.background(255);
-}
-
-function drawHistory() {
-	clearCanvas();
-	for(let ball of localHistory) {
-		drawCircle(ball);
-	}
-}
-
-function mouseOnBoard() {
-	if(mouseX < 0) return false;
-	if(mouseY < 0) return false;
-	if(mouseX > width) return false;
-	if(mouseY > height) return false;
-	return true;
-}
-
 function limitHistory() {
     const percent = 0.2; // percent of history to remove
-    const length = localHistory.length;
+    const length = state.history.length;
 
     if(length >= MAX_HIST_SIZE) {
-        localHistory = localHistory.slice(parseInt(length * percent), length);
+        state.history = state.history.slice(parseInt(length * percent), length);
     }
 }
 
@@ -176,23 +88,9 @@ function undo() {
 }
 
 function keyPressed() {
-	// console.log(keyCode);
 	if(keyIsDown(90) && keyIsDown(CONTROL)) {
-		// print("Ctrl+z");
 		undo();
 	}
-	// if (keyCode === 90 && evtobj.ctrlKey) alert("Ctrl+z");
 }
 
-// function drawPallete() {
-
-// 	for(let i=0; i<255; i++) {
-// 		for(let j=0; j<255; j++) {
-// 			colorPicker.stroke(i, j, 150);
-// 			colorPicker.point(i, j);
-// 		}
-// 	}
-
-	
-// }
 
