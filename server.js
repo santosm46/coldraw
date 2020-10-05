@@ -1,4 +1,4 @@
-const MAX_HIST_SIZE = 1500000;
+const MAX_HIST_SIZE = 150000;
 let express = require('express');
 let app = express();
 let server = app.listen(process.env.PORT || 3333);
@@ -21,7 +21,7 @@ function connectClient(client) {
     newClient.id = client.id;
     newClient.buffer = [];
 
-    state.mouseRings = { id: client.id, mouseX: 0, mouseY: 0, lineSize: 20 };
+    state.mouseRings[client.id] = { id: client.id, mouseX: 0, mouseY: 0, lineSize: 20 };
 
     state.clients[client.id] = newClient;
 }
@@ -44,7 +44,7 @@ function cleanClientBuffer(clientId) {
 function limitHistory() {
     const percent = 0.2; // percent of history to remove
     const length = state.history.length;
-
+    console.log('tamnanho history: ' + length);
     if (length >= MAX_HIST_SIZE) {
         state.history = state.history.slice(parseInt(length * percent), length);
     }
@@ -68,7 +68,13 @@ io.sockets.on('connection', (socket) => {
     socket.on('mouse draw', (data) => {
         socket.broadcast.emit('mouse draw', data); // outros clients
         // console.log('veja o data.id: ', data.id);
-        state.clients[data.id].buffer.push(removeIDfromData(data));
+        const client = state.clients[data.id];
+        if(client) {
+            client.buffer.push(removeIDfromData(data));
+        }
+        else {
+            console.error(`client is null`);
+        }
     });
 
     socket.on('mouse released', (data) => {
